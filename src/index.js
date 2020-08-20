@@ -10,7 +10,12 @@ import { v4 as uuid } from 'uuid';
 const app = express();
 
 app.use(cors());
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use((req, res, next) => {
+    req.me = users[1];
+    next();
+})
 
 let users = {
     1: {
@@ -44,8 +49,8 @@ app.get('/users/:userId', (req, res) => {
     res.send(users[req.params.userId]);
 });
 
-app.get('/messages', (req, res) => {
-    return res.send(Object.values(messages));
+app.get('/messages/:messageId', (req, res) => {
+    return res.send(Object.values(messages[req.params.messageId]));
 });
 
 app.post('/messages', (req, res) => {
@@ -55,11 +60,23 @@ app.post('/messages', (req, res) => {
     const message =  {
         id,
         text: req.body.text,
+        userId: req.me.id,
     };
-    message.id = id;
+    messages[id] = message;
 
     return res.send(message);
 });
+
+app.delete('/messages/:messageId', (req, res) => {
+    const {
+      [req.params.messageId]: message,
+      ...otherMessages
+    } = messages;
+   
+    messages = otherMessages;
+   
+    return res.send(message);
+  });
 
 app.post('/users', (req, res) => {
     res.send('Received POST method');
@@ -72,6 +89,11 @@ app.delete('/users/:userId', (req, res) => {
 app.get('/example', (req, res) => {
     res.send('Hello world hahhhh from example');
 });
+
+app.get('/session', (req, res) => {
+    return res.send(users[req.me.id]);
+  });
+   
 
 app.listen(process.env.PORT, () =>
     console.log(`listening on port ${process.env.PORT}`));
